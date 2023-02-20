@@ -57,6 +57,7 @@ public class View {
 
     void zoom(double dx, double dy, double factor) {
         pan(-dx, -dy);
+        System.out.println(trans.getMxx());
         trans.prependScale(factor, factor);
         pan(dx, dy);
         redraw();

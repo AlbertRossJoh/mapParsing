@@ -12,10 +12,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.zip.ZipInputStream;
 
 import javax.xml.stream.FactoryConfigurationError;
@@ -28,6 +25,8 @@ import javafx.geometry.Point2D;
 public class Model implements Serializable {
     List<Line> lines = new ArrayList<Line>();
     List<Way> ways = new ArrayList<Way>();
+
+    private int fidelity;
 
     double minlat, maxlat, minlon, maxlon;
 
@@ -43,16 +42,21 @@ public class Model implements Serializable {
 
     public Model(String filename) throws XMLStreamException, FactoryConfigurationError, IOException {
         if (filename.endsWith(".osm.zip")) {
-            parseZIP(filename);
+            for (int fid = 0; fid < 5; fid++){
+                parseZIP(filename);
+                fidelity++;
+                save("/Users/albert/IdeaProjects/BFST23/app/data/"+fid+".obj");
+            }
         } else if (filename.endsWith(".osm")) {
             parseOSM(filename);
         } else {
             parseTXT(filename);
         }
         save(filename+".obj");
+        save(0+".obj");
     }
 
-    void save(String filename) throws FileNotFoundException, IOException {
+    void save(String filename) throws IOException {
         try (var out = new ObjectOutputStream(new FileOutputStream(filename))) {
             out.writeObject(this);
         }
@@ -71,8 +75,29 @@ public class Model implements Serializable {
     private void parseOSM(InputStream inputStream) throws FileNotFoundException, XMLStreamException, FactoryConfigurationError {
         var input = XMLInputFactory.newInstance().createXMLStreamReader(new InputStreamReader(inputStream));
         var id2node = new HashMap<Long, Node>();
+//        System.out.println("hello");
         var way = new ArrayList<Node>();
         var coast = false;
+        var set = new HashSet<>();
+        if (fidelity < 1) {
+            //high level
+            set.add("coastline");
+            set.add("motorway");
+        } else if (fidelity < 2) {
+            //semi high
+            set.add("trunk");
+            set.add("primary");
+        } else if (fidelity < 3) {
+            //medium level
+            set.add("secondary");
+            set.add("tertiary");
+        } else if (fidelity < 4) {
+            //low level
+            set.add("unclassified");
+            set.add("residential");
+        }
+
+
         while (input.hasNext()) {
             var tagKind = input.next();
             if (tagKind == XMLStreamConstants.START_ELEMENT) {
@@ -92,9 +117,10 @@ public class Model implements Serializable {
                     coast = false;
                 } else if (name == "tag") {
                     var v = input.getAttributeValue(null, "v");
-                    if (v.equals("coastline")) {
+                    if (set.contains(v)) {
                         coast = true;
                     }
+
                 } else if (name == "nd") {
                     var ref = Long.parseLong(input.getAttributeValue(null, "ref"));
                     var node = id2node.get(ref);
@@ -120,5 +146,13 @@ public class Model implements Serializable {
 
     public void add(Point2D p1, Point2D p2) {
         lines.add(new Line(p1, p2));
+    }
+
+    public int getFidelity() {
+        return fidelity;
+    }
+
+    public void setFidelity(int fidelity) {
+        this.fidelity = fidelity;
     }
 }
