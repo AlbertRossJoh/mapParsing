@@ -26,7 +26,7 @@ public class Model implements Serializable {
     List<Line> lines = new ArrayList<Line>();
     List<Way> ways = new ArrayList<Way>();
 
-    private int fidelity;
+    private int fidelity = 0;
 
     double minlat, maxlat, minlon, maxlon;
 
@@ -42,18 +42,13 @@ public class Model implements Serializable {
 
     public Model(String filename) throws XMLStreamException, FactoryConfigurationError, IOException {
         if (filename.endsWith(".osm.zip")) {
-            for (int fid = 0; fid < 5; fid++){
-                parseZIP(filename);
-                fidelity++;
-                save("/Users/albert/IdeaProjects/BFST23/app/data/"+fid+".obj");
-            }
+            parseZIP(filename);
         } else if (filename.endsWith(".osm")) {
             parseOSM(filename);
         } else {
             parseTXT(filename);
         }
-        save(filename+".obj");
-        save(0+".obj");
+        save("/Users/albert/IdeaProjects/BFST23/app/data/"+0+".obj");
     }
 
     void save(String filename) throws IOException {
@@ -80,21 +75,24 @@ public class Model implements Serializable {
         var coast = false;
         var set = new HashSet<>();
         if (fidelity < 1) {
-            //high level
-            set.add("coastline");
-            set.add("motorway");
-        } else if (fidelity < 2) {
-            //semi high
-            set.add("trunk");
-            set.add("primary");
-        } else if (fidelity < 3) {
-            //medium level
-            set.add("secondary");
-            set.add("tertiary");
-        } else if (fidelity < 4) {
             //low level
             set.add("unclassified");
             set.add("residential");
+        }
+        if (fidelity < 2) {
+            //medium level
+            set.add("secondary");
+            set.add("tertiary");
+        }
+        if (fidelity < 3) {
+            //semi high
+            set.add("trunk");
+            set.add("primary");
+        }
+        if (fidelity < 4) {
+            //high level
+            set.add("coastline");
+            set.add("motorway");
         }
 
 
